@@ -11,4 +11,6 @@ from env import env
 
 if __name__ == "__main__":
 
-    env1 = env(3, "linear")
+    env1 = env(3, "random")
+    env1.ping([-10, -10, -10])
+    env1.ping([-10, -10, -10])
