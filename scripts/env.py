@@ -12,18 +12,21 @@ import json
 
 class env():
     
-    def __init__(self, num_stations, mode):
+    def __init__(self, num_stations, init_stock , mode):
         
         print("Creating a network of {} stations".format(num_stations))
         
         self.num_stations = num_stations
         self.mode = mode
+        self.init_stock = init_stock
+        self.upper_trenshold = init_stock * 1.5
         self.seed = np.random.random_integers(0, 10)
         self.num_hours = 23
         self.current_hour = 0
         self.hourly_flow_matrix = self.init_hourly_flow()
         self.stations_list = self.init_stations()
-        self.rewards = [0, 0, 0]
+        self.rewards = np.zeros(self.num_stations)
+        self.limit_flags = np.zeros(self.num_stations)
         self.done = False
         self.game_over = False
                         
@@ -66,7 +69,7 @@ class env():
             
             # create station class
             print("initiated station {}".format(i))
-            station_list.append(station(i, 50, this_station_hourly_net_flow))
+            station_list.append(station(i, self.init_stock, this_station_hourly_net_flow))
             
         return station_list
             
@@ -77,7 +80,8 @@ class env():
         
         for hour in range(self.num_hours):
                         
-            bike_flow = np.random.random_integers(0, 20, (self.num_stations, self.num_stations))
+            bike_flow = np.random.random_integers(0, 20, (self.num_stations, 
+                                                          self.num_stations))
             
             # replace diagonal with zeros
             for idx in range(self.num_stations):
@@ -99,28 +103,39 @@ class env():
             
             self.stations_list[idx].update_stock(self.current_hour, actions[idx])
             
-            #TODO: update rewards based on actions
-        
-        # Determine Rewards
+            self.rewards = -0.5*np.abs(np.array(actions))
         
         # Update Env Variables
         if self.current_hour == 23:
-            self.done = True
             
-            #TODO: update rewards based on state
+            self.done = True
+            print("end of day")
+            
+            for station in range(self.num_stations):
+                if self.new_stocks[station] <= self.init_stock & self.new_stocks[station] > 0:
+                    self.rewards[station] += 50
+                    
+                else: 
+                    self.rewards[station] += -50
+            
         
         if self.current_hour != 23:
             self.update_hour()
+            
             self.old_stocks = self.get_old_stocks() 
             self.new_stocks = self.get_new_stocks()
             
-            # TODO: update rewards based on state
+            # Penalize RL agent if stocks is over limits
+            for station in range(self.num_stations):
+                if self.new_stocks[station] > self.upper_trenshold or self.new_stocks[station] <= 0:
+                    self.rewards[station] += -30
             
-            print("hour {}, {}, {}".format(self.current_hour, self.old_stocks, self.new_stocks))
+            print("hour {}, {}, {}, {}".format(self.current_hour, 
+                  self.old_stocks, self.new_stocks, self.rewards))
         
         return self.current_hour, self.old_stocks, self.new_stocks, self.rewards, self.done, self.game_over
         
-    
+            
     def update_hour(self):
         
         self.current_hour += 1
@@ -155,10 +170,16 @@ class env():
         
         for station in self.stations_list:
             
-            print("{}: {} bikes".format(station.get_name(), station.get_old_stock()))        
-
+            print("{}: {} bikes".format(station.get_name(), station.get_old_stock()))
             
-            
+    def reset(self):
+        self.current_hour = 0
+        self.stations_list = self.init_stations()
+        self.rewards = np.zeros(self.num_stations)
+        self.limit_flags = np.zeros(self.num_stations)
+        self.done = False
+        self.game_over = False        
+        
             
 class station():
     
@@ -205,7 +226,7 @@ class station():
             self.old_stock = self.bike_stock[current_hour]
             self.new_stock = self.bike_stock[current_hour+1]
             
-            print("{} - {}".format(self.name, self.bike_stock))
+            #print("{} - {}".format(self.name, self.bike_stock))
             
         else: 
             pass

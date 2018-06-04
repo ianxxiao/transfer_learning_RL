@@ -3,7 +3,7 @@
 """
 Created on Sun Jun  3 16:52:23 2018
 
-@author: mrmrsxiao
+@author: Ian Xiao
 """
 
 from env import env
@@ -11,6 +11,13 @@ from env import env
 
 if __name__ == "__main__":
 
-    env1 = env(3, "random")
-    env1.ping([-10, -10, -10])
-    env1.ping([-10, -10, -10])
+    env1 = env(5, 50, "random")
+    
+    for hour in range(0, 24):
+        env1.ping([-10, -10, -10, -10, -10])
+
+    # reset 
+    print("===============================")
+    env1.reset()
+    for hour in range(0, 24):
+        env1.ping([-10, -10, -10, -10, -10])
