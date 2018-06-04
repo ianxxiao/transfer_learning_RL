@@ -6,3 +6,9 @@ Created on Sun Jun  3 16:52:23 2018
 @author: mrmrsxiao
 """
 
+from env import env
+
+
+if __name__ == "__main__":
+
+    env1 = env(3, "linear")
