@@ -11,7 +11,8 @@ from env import env
 
 if __name__ == "__main__":
 
-    env1 = env(5, 50, "random")
+    env1 = env(5, 50)
+    env2 = env(7, 30)
     
     for hour in range(0, 24):
         env1.ping([-10, -10, -10, -10, -10])

@@ -12,12 +12,11 @@ import json
 
 class env():
     
-    def __init__(self, num_stations, init_stock , mode):
+    def __init__(self, num_stations, init_stock):
         
         print("Creating a network of {} stations".format(num_stations))
         
         self.num_stations = num_stations
-        self.mode = mode
         self.init_stock = init_stock
         self.upper_trenshold = init_stock * 1.5
         self.seed = np.random.random_integers(0, 10)
