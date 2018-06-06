@@ -40,35 +40,43 @@ class env():
         
         station_list = []
         # create station class with pre-defined hourly flow
+        
         for i in range(self.num_stations):
             
-            all_hourly_inflow = []
-            all_hourly_outflow = []
+            if self.num_stations > 1:
             
-            # get hourly inflow and outflow
-            for hour in range(self.num_hours):
+                all_hourly_inflow = []
+                all_hourly_outflow = []
                 
-                this_hour_flow_matrix = self.hourly_flow_matrix[hour]
-                
-                this_hour_inflow = 0
-                this_hour_outfow = 0
-                
-                for idx in range(len(this_hour_flow_matrix)):
-                    # row wise addition
-                    this_hour_inflow += this_hour_flow_matrix[idx][i]
+                # get hourly inflow and outflow
+                for hour in range(self.num_hours):
                     
-                    # column wise addition
-                    this_hour_outfow += this_hour_flow_matrix[i][idx]
-                
-                all_hourly_inflow.append(this_hour_inflow)
-                all_hourly_outflow.append(this_hour_outfow)            
+                    this_hour_flow_matrix = self.hourly_flow_matrix[hour]
+                    
+                    this_hour_inflow = 0
+                    this_hour_outfow = 0
+                    
+                    for idx in range(len(this_hour_flow_matrix)):
+                        # row wise addition
+                        this_hour_inflow += this_hour_flow_matrix[idx][i]
                         
-            # compute hourly netflow
-            this_station_hourly_net_flow = np.array(all_hourly_inflow) - np.array(all_hourly_outflow)
+                        # column wise addition
+                        this_hour_outfow += this_hour_flow_matrix[i][idx]
+                    
+                    all_hourly_inflow.append(this_hour_inflow)
+                    all_hourly_outflow.append(this_hour_outfow)            
+                            
+                # compute hourly netflow
+                this_station_hourly_net_flow = np.array(all_hourly_inflow) - np.array(all_hourly_outflow)
+                
+                # create station class
+                print("initiated station {}".format(i))
+                station_list.append(station(i, self.init_stock, this_station_hourly_net_flow))
             
-            # create station class
-            print("initiated station {}".format(i))
-            station_list.append(station(i, self.init_stock, this_station_hourly_net_flow))
+            else:
+                # create station class
+                print("initiated station {}".format(i))
+                station_list.append(station(i, self.init_stock, self.hourly_flow_matrix))
             
         return station_list
             
@@ -78,16 +86,19 @@ class env():
         hourly_flow = []
         
         for hour in range(self.num_hours):
-                        
-            bike_flow = np.random.random_integers(0, 20, (self.num_stations, 
+            if self.num_stations != 1:
+                bike_flow = np.random.random_integers(0, 20, (self.num_stations, 
                                                           self.num_stations))
+            else: 
+                bike_flow = int(np.random.random_integers(0, 20, (1)))        
             
             # replace diagonal with zeros
-            for idx in range(self.num_stations):
-                bike_flow[idx][idx] = 0
+            if self.num_stations > 1:
+                for idx in range(self.num_stations):
+                    bike_flow[idx][idx] = 0
             
             hourly_flow.append(bike_flow)
-        
+
         return hourly_flow
 
         
@@ -98,11 +109,11 @@ class env():
         # Update Station Stocks
         # actions = [-3, -5, 1] as number of bikes move for the corresponding station
         
-        for idx in range(self.num_stations):
+        for station in range(self.num_stations):
+        
+            self.stations_list[station].update_stock(self.current_hour, actions[station])
             
-            self.stations_list[idx].update_stock(self.current_hour, actions[idx])
-            
-            self.rewards = -0.5*np.abs(np.array(actions))
+            self.rewards[station] = -0.5*np.abs(actions[station])
         
         # Update Env Variables
         if self.current_hour == 23:
