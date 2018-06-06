@@ -26,8 +26,7 @@ class env():
         self.stations_list = self.init_stations()
         self.rewards = np.zeros(self.num_stations)
         self.limit_flags = np.zeros(self.num_stations)
-        self.done = False
-        self.game_over = False
+        self.day_end = False
                         
     def init_stations(self):
         
@@ -118,7 +117,7 @@ class env():
         # Update Env Variables
         if self.current_hour == 23:
             
-            self.done = True
+            self.day_end = True
             print("end of day")
             
             for station in range(self.num_stations):
@@ -127,6 +126,8 @@ class env():
                     
                 else: 
                     self.rewards[station] += -50
+                    
+            print("final rewards: {}".format(self.rewards))
             
         
         if self.current_hour != 23:
@@ -143,7 +144,7 @@ class env():
             print("hour {}, {}, {}, {}".format(self.current_hour, 
                   self.old_stocks, self.new_stocks, self.rewards))
         
-        return self.current_hour, self.old_stocks, self.new_stocks, self.rewards, self.done, self.game_over
+        return self.current_hour, self.old_stocks, self.new_stocks, self.rewards, self.day_end
         
             
     def update_hour(self):
@@ -187,8 +188,7 @@ class env():
         self.stations_list = self.init_stations()
         self.rewards = np.zeros(self.num_stations)
         self.limit_flags = np.zeros(self.num_stations)
-        self.done = False
-        self.game_over = False        
+        self.day_end = False      
         
             
 class station():
@@ -204,7 +204,7 @@ class station():
         self.bike_stock = self.bike_stock_sim # to be reset to original copy every episode
         self.old_stock = self.bike_stock[0]
         self.new_stock = self.bike_stock[0]
-        self.done = False
+        self.day_end = False
         self.bike_moved = 0
         
         

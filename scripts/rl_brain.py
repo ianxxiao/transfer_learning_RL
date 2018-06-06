@@ -46,7 +46,7 @@ class agent_manager():
     
         return actions
         
-    def batch_learn(self, s, a, r, s_, g):
+    def batch_learn(self, s, a, r, s_, day_end):
         
         '''
         This function updates Q tables after each interaction with the
@@ -63,7 +63,17 @@ class agent_manager():
         print("agents are learning")
         
         for idx in range(self.num_agent):
-            self.agent_list[idx].learn(s[idx], a[idx], r[idx], s_[idx], g)        
+            self.agent_list[idx].learn(s[idx], a[idx], r[idx], s_[idx], day_end)
+            
+    def batch_choose_action(self, s):
+        
+        actions = []
+        
+        for idx in range(self.num_agent):
+            action = self.agent_list[idx].choose_action(s[idx])
+            actions.append(action)
+            
+        return actions
         
         
 class agent():
@@ -96,7 +106,7 @@ class agent():
         self.check_state_exist(current_stock)
 
         
-    def choose_action(self, s, ex):
+    def choose_action(self, s):
         
         '''
         This funciton choose an action based on Q Table. It also does 
@@ -112,24 +122,10 @@ class agent():
         
         self.check_state_exist(s)
         self.current_stock = s
-        self.expected_stock = ex
         
         # find valid action based on current stock 
-        # cannot pick an action that lead to negative stock
-        
-        # !!!! remove action validation; only rely on reward/penalty !!!
-        # valid_state_action = self.find_valid_action(self.q_table.loc[s, :])
-        if self.model_based == True:
-            #Take an average of current stock and expected stock
-            try:
-                avg = int(round(0.5*s + 0.5*ex))
-            except:
-                avg = s
-            self.check_state_exist(avg)
-            valid_state_action = self.q_table.loc[avg, :]
 
-        elif self.model_based == False:
-            valid_state_action = self.q_table.loc[s, :]
+        valid_state_action = self.q_table.loc[s, :]
                 
         if np.random.uniform() < self.epsilon:
                         
@@ -164,7 +160,7 @@ class agent():
         return action
         
         
-    def learn(self, s, a, r, s_, g):
+    def learn(self, s, a, r, s_, day_end):
 
         
         '''
@@ -189,7 +185,7 @@ class agent():
         
         q_predict = self.q_table.loc[s, a]
         
-        if g == False:
+        if day_end == False:
             # Updated Q Target Value if it is not end of day  
             q_target = r + self.gamma * self.q_table.loc[s_, :].max()
         
