@@ -26,7 +26,7 @@ class agent_manager():
         
     def init_agents(self):
         
-        print("generating agent")
+        print("Generating agents ...")
         
         agent_list = []
         
@@ -59,9 +59,7 @@ class agent_manager():
             - g: game over flag
         
         '''
-        
-        print("agents are learning")
-        
+                
         for idx in range(self.num_agent):
             self.agent_list[idx].learn(s[idx], a[idx], r[idx], s_[idx], day_end)
             
@@ -75,6 +73,27 @@ class agent_manager():
             
         return actions
         
+    def batch_reset(self):
+        
+        self.agent_list = self.init_agents()
+        
+    def get_team_rewards(self):
+        
+        team_rewards = []
+        
+        for agent in self.agent_list:
+            team_rewards.append(agent.get_rewards())
+            
+        return sum(team_rewards)
+        
+    def eps_reset(self):
+            
+        for agent in self.agent_list:
+            agent.reset_cumulative_reward()
+        
+'''
+-------------------------------------------------------------------------------
+'''
         
 class agent():
     
@@ -100,6 +119,7 @@ class agent():
         self.q_table = pd.DataFrame(columns = self.actions, dtype = np.float64)
         self.hourly_action_history = []
         self.hourly_stock_history = []
+        self.cumulative_reward = 0.0
         
         print("{}: hello :)  I am ready.".format(self.name))
         
@@ -195,6 +215,8 @@ class agent():
 
         self.q_table.loc[s, a] += self.lr * (q_target - q_predict)
         
+        self.cumulative_reward = r + self.cumulative_reward
+        
         return
 
         
@@ -211,7 +233,6 @@ class agent():
                         name = state
                         )
                 )
-        
         
     def print_q_table(self):
         
@@ -230,13 +251,19 @@ class agent():
     def get_hourly_stocks(self):
         
         return self.hourly_stock_history
-
-    
-    def reset_hourly_history(self):
         
-        self.hourly_action_history = []
-        self.hourly_stock_history = []
+    def get_rewards(self):
+        
+        return self.cumulative_reward
+        
+    def reset_cumulative_reward(self):
+        
+        self.cumulative_reward = 0.0
 
+        
+'''
+-------------------------------------------------------------------------------
+'''
         
 class TL():
     

@@ -12,10 +12,11 @@ import json
 
 class env():
     
-    def __init__(self, num_stations, init_stock):
+    def __init__(self, num_stations, init_stock, debug):
         
-        print("Creating a network of {} stations".format(num_stations))
+        print("Creating a network of {} stations ...".format(num_stations))
         
+        self.debug = debug
         self.num_stations = num_stations
         self.init_stock = init_stock
         self.upper_trenshold = init_stock * 1.5
@@ -27,7 +28,12 @@ class env():
         self.rewards = np.zeros(self.num_stations)
         self.limit_flags = np.zeros(self.num_stations)
         self.day_end = False
-                        
+        
+        self.success_flags = []
+        
+        for station in range(self.num_stations):
+            self.success_flags.append(True)
+        
     def init_stations(self):
         
         '''
@@ -69,12 +75,16 @@ class env():
                 this_station_hourly_net_flow = np.array(all_hourly_inflow) - np.array(all_hourly_outflow)
                 
                 # create station class
-                print("initiated station {}".format(i))
+                if self.debug == True:
+                    print("initiated station {}".format(i))
+                
                 station_list.append(station(i, self.init_stock, this_station_hourly_net_flow))
             
             else:
                 # create station class
-                print("initiated station {}".format(i))
+                if self.debug == True:
+                    print("initiated station {}".format(i))
+                
                 station_list.append(station(i, self.init_stock, self.hourly_flow_matrix))
             
         return station_list
@@ -103,8 +113,6 @@ class env():
         
     def ping(self, actions):
         
-        print("ping ...")
-        
         # Update Station Stocks
         # actions = [-3, -5, 1] as number of bikes move for the corresponding station
         
@@ -118,16 +126,19 @@ class env():
         if self.current_hour == 23:
             
             self.day_end = True
-            print("end of day")
             
             for station in range(self.num_stations):
-                if self.new_stocks[station] <= self.init_stock and self.new_stocks[station] > 0:
+                if self.success_flags[station] == True:
                     self.rewards[station] += 50
+                    
+                    #TODO: ADD TEAM SUCCESS REWARD
                     
                 else: 
                     self.rewards[station] += -50
-                    
-            print("final stocks, actions, rewards: {}, {}, {}".format(self.new_stocks, actions, self.rewards))
+            
+            if self.debug == True:
+                print("ping ...")
+                print("final stocks, actions, rewards: {}, {}, {}".format(self.new_stocks, actions, self.rewards))
             
         
         if self.current_hour != 23:
@@ -140,9 +151,11 @@ class env():
             for station in range(self.num_stations):
                 if self.new_stocks[station] > self.upper_trenshold or self.new_stocks[station] <= 0:
                     self.rewards[station] += -30
+                    self.success_flags[station] = False
             
-            print("hour {}, {}, {}, {}, {}".format(self.current_hour, 
-                  self.old_stocks, self.new_stocks, actions, self.rewards))
+            if self.debug == True:
+                print("hour {}, {}, {}, {}, {}, {}".format(self.current_hour, 
+                      self.old_stocks, self.new_stocks, actions, self.rewards, self.success_flags))
         
         return self.current_hour, self.old_stocks, self.new_stocks, self.rewards, self.day_end
         
@@ -173,7 +186,7 @@ class env():
         for station in self.stations_list:
             
             new_stocks.append(station.get_new_stock())
-            
+                        
         return new_stocks
 
         
@@ -183,13 +196,31 @@ class env():
             
             print("{}: {} bikes".format(station.get_name(), station.get_old_stock()))
             
-    def reset(self):
+    def eps_reset(self):
+                
         self.current_hour = 0
+        self.hourly_flow_matrix = self.init_hourly_flow()
         self.stations_list = self.init_stations()
         self.rewards = np.zeros(self.num_stations)
         self.limit_flags = np.zeros(self.num_stations)
-        self.day_end = False      
+        self.day_end = False
         
+        self.success_flags = []
+        
+        for station in range(self.num_stations):
+            self.success_flags.append(True)
+        
+    def cal_success_ratio(self):
+        
+        return sum(self.success_flags)*1.0 / len(self.success_flags)
+
+        
+'''
+
+------------------------------------------------------------------------------
+
+
+'''
             
 class station():
     
@@ -215,7 +246,7 @@ class station():
         for i in range(1, 24):
             stock.append(stock[i-1] + self.hourly_net_flow[i-1])
         
-        print("{} - {}".format(self.name, stock))
+        #print("{} - {}".format(self.name, stock))
             
         return stock
              
