@@ -8,6 +8,7 @@ Created on Sun Jun  3 16:50:38 2018
 
 import numpy as np
 import pandas as pd
+import os
 
 class agent_manager():
     
@@ -90,7 +91,19 @@ class agent_manager():
             
         for agent in self.agent_list:
             agent.reset_cumulative_reward()
+            
+    def save_q_tables(self, timestamp):
+                
+        dir_path = "./performance_log/" + timestamp + "/q_tables/"
         
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)        
+        
+        for agent in self.agent_list:
+            q_table = agent.get_q_table()
+            q_table.to_csv(dir_path + agent.get_name() + "_q_table.csv")
+        
+
 '''
 -------------------------------------------------------------------------------
 '''
@@ -248,18 +261,26 @@ class agent():
         
         return self.hourly_action_history
     
+        
     def get_hourly_stocks(self):
         
         return self.hourly_stock_history
+        
         
     def get_rewards(self):
         
         return self.cumulative_reward
         
+        
     def reset_cumulative_reward(self):
         
         self.cumulative_reward = 0.0
-
+        
+    def get_name(self):
+        
+        return str(self.name)
+        
+    
         
 '''
 -------------------------------------------------------------------------------

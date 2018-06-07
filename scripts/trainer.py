@@ -10,6 +10,8 @@ from env import env
 from rl_brain import agent_manager
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import datetime
+import numpy as np
 
 class trainer():
     
@@ -21,6 +23,7 @@ class trainer():
         self.current_stocks = self.init_stocks
         self.num_stations = num_stations
         self.action_space = action_space
+        self.timestamp = self.get_timestamp(True)
                 
         for idx in range(num_stations):
             self.init_stocks.append(50)
@@ -66,11 +69,12 @@ class trainer():
                 self.agent_manager.eps_reset()
             
             print("-------------------------")
-            
+            self.agent_manager.save_q_tables(self.timestamp)
             self.graph_performance(num_eps)
             
     def graph_performance(self, num_eps):
         
+        # Success Ratio
         plt.figure(figsize=(5, 4))
         title = "Success Ratio"
         x_axis = [x for x in range(num_eps)]
@@ -79,6 +83,8 @@ class trainer():
         plt.ylabel("Group Success Ratio")
         plt.title(title)
         
+        
+        # Cumulative Rewards
         plt.figure(figsize=(5, 4))
         title = "Cumulative Rewards (Total of All Agents)"
         x_axis = [x for x in range(num_eps)]
@@ -86,4 +92,31 @@ class trainer():
         plt.xlabel("Episode")
         plt.ylabel("Group Success Ratio")
         plt.title(title)
+        
+        # Rolling Average of Cumulative Rewards
+        plt.figure(figsize = (5, 4))
+        window = 10
+        rolling_average = self.rolling_avg(self.team_cumulative_rewards, window)
+        x_axis = [x for x in range(len(rolling_average))]
+        plt.plot(x_axis, rolling_average)
+        plt.xlabel("Episode (window = " + str(window) + ")")
+        plt.ylabel("Rolling Avg. Group Success Ratio")
+        plt.title("Rolling Avg. Cumulative Rewards")
+    
+    def rolling_avg(self, rewards, n):
+        ret = np.cumsum(rewards, dtype = float)
+        ret[n:] = ret[n:] - ret[:-n]
+        return ret[n - 1:] / n
+        
+    
+    def get_timestamp(self, replace):
+        
+        if replace == True:
+        
+            return str(datetime.datetime.now()).replace(" ", "").replace(":", "").\
+                        replace(".", "").replace("-", "")
+        
+        else:
+            
+            return str(datetime.datetime.now())
         
