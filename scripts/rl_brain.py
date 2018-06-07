@@ -101,7 +101,7 @@ class agent():
         self.hourly_action_history = []
         self.hourly_stock_history = []
         
-        print("{}: hello :)".format(self.name))
+        print("{}: hello :)  I am ready.".format(self.name))
         
         self.check_state_exist(current_stock)
 

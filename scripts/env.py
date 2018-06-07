@@ -121,13 +121,13 @@ class env():
             print("end of day")
             
             for station in range(self.num_stations):
-                if self.new_stocks[station] <= self.init_stock & self.new_stocks[station] > 0:
+                if self.new_stocks[station] <= self.init_stock and self.new_stocks[station] > 0:
                     self.rewards[station] += 50
                     
                 else: 
                     self.rewards[station] += -50
                     
-            print("final rewards: {}".format(self.rewards))
+            print("final stocks, actions, rewards: {}, {}, {}".format(self.new_stocks, actions, self.rewards))
             
         
         if self.current_hour != 23:
@@ -141,8 +141,8 @@ class env():
                 if self.new_stocks[station] > self.upper_trenshold or self.new_stocks[station] <= 0:
                     self.rewards[station] += -30
             
-            print("hour {}, {}, {}, {}".format(self.current_hour, 
-                  self.old_stocks, self.new_stocks, self.rewards))
+            print("hour {}, {}, {}, {}, {}".format(self.current_hour, 
+                  self.old_stocks, self.new_stocks, actions, self.rewards))
         
         return self.current_hour, self.old_stocks, self.new_stocks, self.rewards, self.day_end
         
