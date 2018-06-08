@@ -1,3 +1,3 @@
 # Collaborative Transfer Learning Enabled Reinforcement Learning Agent
 
-Details to be updated shortly.
+![image](/screenshots/preliminary_architecture.png)
