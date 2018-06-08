@@ -74,6 +74,8 @@ class trainer():
             
     def graph_performance(self, num_eps):
         
+        window = 100
+        
         # Success Ratio
         plt.figure(figsize=(5, 4))
         title = "Success Ratio"
@@ -83,6 +85,14 @@ class trainer():
         plt.ylabel("Group Success Ratio")
         plt.title(title)
         
+        # Rolling Average of Cumulative Rewards
+        plt.figure(figsize = (5, 4))
+        rolling_average = self.rolling_avg(self.success_ratios, window)
+        x_axis = [x for x in range(len(rolling_average))]
+        plt.plot(x_axis, rolling_average)
+        plt.xlabel("Episode (window = " + str(window) + ")")
+        plt.ylabel("Rolling Avg. Group Success Ratio")
+        plt.title("Rolling Avg. Group Success Ratio")        
         
         # Cumulative Rewards
         plt.figure(figsize=(5, 4))
@@ -95,12 +105,11 @@ class trainer():
         
         # Rolling Average of Cumulative Rewards
         plt.figure(figsize = (5, 4))
-        window = 10
         rolling_average = self.rolling_avg(self.team_cumulative_rewards, window)
         x_axis = [x for x in range(len(rolling_average))]
         plt.plot(x_axis, rolling_average)
         plt.xlabel("Episode (window = " + str(window) + ")")
-        plt.ylabel("Rolling Avg. Group Success Ratio")
+        plt.ylabel("Rolling Avg. Cumulative Rewards")
         plt.title("Rolling Avg. Cumulative Rewards")
     
     def rolling_avg(self, rewards, n):
