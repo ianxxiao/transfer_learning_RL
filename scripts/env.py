@@ -28,6 +28,7 @@ class env():
         self.rewards = np.zeros(self.num_stations)
         self.limit_flags = np.zeros(self.num_stations)
         self.day_end = False
+        self.mode = "learn"
         
         self.success_flags = []
         

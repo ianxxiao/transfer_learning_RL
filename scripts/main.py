@@ -10,8 +10,15 @@ from trainer import trainer
 
 if __name__ == "__main__":
     
+    # Introduce Parallel Processing Scheme
+    # Add Action-Value Transfer Learning Mechanics
+    
     action_space = [-20, -10, -3, -1, 0, 1, 3, 10, 20]
-    trainer = trainer(10, action_space, episode = 20000)
-    trainer.start()
+    num_stations = 3
+    episode = 500
+
+    trainer = trainer(num_stations, action_space, episode)
+    trainer.run(mode = "learn")    
+    trainer.run(mode = "test")
     
     del trainer

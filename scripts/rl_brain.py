@@ -24,6 +24,7 @@ class agent_manager():
         self.action_space = action_space
         self.init_stock = init_stock_list
         self.agent_list = self.init_agents()
+        self.mode = "learn"
         
     def init_agents(self):
         
@@ -50,8 +51,8 @@ class agent_manager():
     def batch_learn(self, s, a, r, s_, day_end):
         
         '''
-        This function updates Q tables after each interaction with the
-        environment.
+        This function updates Q tables and Meta Q Table after each interaction 
+        with the environment.
         Input: 
             - s: current bike stock
             - a: current action (number of bikes to move)
@@ -63,13 +64,20 @@ class agent_manager():
                 
         for idx in range(self.num_agent):
             self.agent_list[idx].learn(s[idx], a[idx], r[idx], s_[idx], day_end)
+                        
             
-    def batch_choose_action(self, s):
+    def batch_choose_action(self, s, mode, q_tables):
         
         actions = []
         
         for idx in range(self.num_agent):
-            action = self.agent_list[idx].choose_action(s[idx])
+            action = self.agent_list[idx].choose_action(s[idx], mode, q_tables)
+            
+            #TODO: PICK ACTIONS BASED ON Transfer Learning
+            # Look for popular actions based on old Q Tables
+            # Look for best actions based on recent learning
+            # Weight and decide 
+            
             actions.append(action)
             
         return actions
@@ -86,7 +94,18 @@ class agent_manager():
             team_rewards.append(agent.get_rewards())
             
         return sum(team_rewards)
+    
+    
+    def get_q_tables(self):
         
+        q_tables = []
+        
+        for agent in self.agent_list:
+            q_tables.append(agent.get_q_table())
+            
+        return q_tables
+
+    
     def eps_reset(self):
             
         for agent in self.agent_list:
@@ -139,7 +158,7 @@ class agent():
         self.check_state_exist(current_stock)
 
         
-    def choose_action(self, s):
+    def choose_action(self, s, mode, q_tables):
         
         '''
         This funciton choose an action based on Q Table. It also does 
@@ -171,10 +190,12 @@ class agent():
             except:
                 # if action list is null, default to 0
                 action = 0
-                        
-            if self.debug == True:
-                print("Decided to Move: {}".format(action))
-                        
+            
+            
+            #TODO: PICK ACTION BASED ON TL
+            #FIND BEST ACTION USING MAJORITY VOTING BASED ON OLD Q-TALBES
+            #DECIDE IF ACITON SHOULD BE OVERRULED
+                               
         else:
             
             # randomly choose an action
@@ -193,7 +214,7 @@ class agent():
         return action
         
         
-    def learn(self, s, a, r, s_, day_end):
+    def learn(self, s, a, r, s_, day_end, mode):
 
         
         '''
