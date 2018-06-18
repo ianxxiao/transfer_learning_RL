@@ -15,10 +15,11 @@ if __name__ == "__main__":
     
     action_space = [-20, -10, -3, -1, 0, 1, 3, 10, 20]
     num_stations = 3
-    episode = 500
+    episode = 50000
 
     trainer = trainer(num_stations, action_space, episode)
     trainer.run(mode = "learn")    
     trainer.run(mode = "test")
+    trainer.graph_performance(episode)
     
     del trainer

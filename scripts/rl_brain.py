@@ -72,12 +72,7 @@ class agent_manager():
         
         for idx in range(self.num_agent):
             action = self.agent_list[idx].choose_action(s[idx], mode, q_tables)
-            
-            #TODO: PICK ACTIONS BASED ON Transfer Learning
-            # Look for popular actions based on old Q Tables
-            # Look for best actions based on recent learning
-            # Weight and decide 
-            
+                        
             actions.append(action)
             
         return actions
@@ -158,7 +153,7 @@ class agent():
         self.check_state_exist(current_stock)
 
         
-    def choose_action(self, s, mode, q_tables):
+    def choose_action(self, s, mode, tl_q_tables):
         
         '''
         This funciton choose an action based on Q Table. It also does 
@@ -180,33 +175,30 @@ class agent():
         valid_state_action = self.q_table.loc[s, :]
                 
         if np.random.uniform() < self.epsilon:
-                        
-            try:
-                # find the action with the highest expected reward
-                
-                valid_state_action = valid_state_action.reindex(np.random.permutation(valid_state_action.index))
-                action = valid_state_action.idxmax()
             
-            except:
-                # if action list is null, default to 0
-                action = 0
-            
-            
+            action = self.find_best_actions(s, self.q_table)
+                                  
             #TODO: PICK ACTION BASED ON TL
             #FIND BEST ACTION USING MAJORITY VOTING BASED ON OLD Q-TALBES
             #DECIDE IF ACITON SHOULD BE OVERRULED
-                               
+            
+            if mode == "test":
+                
+                best_action, tl_flag = self.find_best_actions(s, tl_q_tables)                
+                
+                # Pick an action based on TL Weighting
+                if tl_flag == False:
+                    action = best_action
+            
         else:
             
             # randomly choose an action
             # re-pick if the action leads to negative stock
             try:
                 action = np.random.choice(valid_state_action.index)
+                
             except:
                 action = 0
-            
-            if self.debug == True:
-                print("Randomly Move: {}".format(action))
         
         self.hourly_action_history.append(action)
         self.hourly_stock_history.append(s)
@@ -214,7 +206,49 @@ class agent():
         return action
         
         
-    def learn(self, s, a, r, s_, day_end, mode):
+    def find_best_actions(self, s, q_tables):
+        
+        best_actions = []
+        tl_flag = False
+        
+        # Find Best Action based on State-Action Values
+        # Applied to both normal Q Table and TL Process
+        
+        if type(q_tables) == list: 
+            
+            for table in q_tables:
+                
+                try:
+                    state_actions = table.loc[s, :]
+                    state_actions = state_actions.reindex(np.random.permutation(state_actions.index))
+                    best_action = state_actions.idxmax()
+                    
+                except:
+                    tl_flag = True
+                    best_action = 0
+                    
+                best_actions.append(best_action)
+                
+            # Talley all Actions and Return and most voted
+            
+            best_action = max(set(best_actions), key = best_actions.count)
+                
+            return best_action, tl_flag
+        
+        else:
+            
+            state_actions = q_tables.loc[s, :]
+            
+            try:
+                state_actions = state_actions.reindex(np.random.permutation(state_actions.index))
+                best_action = state_actions.idxmax()
+                
+            except:
+                best_action = 0
+            
+            return best_action
+                    
+    def learn(self, s, a, r, s_, day_end):
 
         
         '''
