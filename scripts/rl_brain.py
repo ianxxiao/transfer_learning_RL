@@ -26,18 +26,32 @@ class agent_manager():
         self.agent_list = self.init_agents()
         self.mode = "learn"
         
-    def init_agents(self):
+    def init_agents(self, trained_table = None):
         
         print("Generating agents ...")
         
-        agent_list = []
-        
-        for idx in range(self.num_agent):
+        if trained_table is not None:
+                    
+            agent_list = []
             
-            agent_list.append(agent(idx, self.action_space, epsilon = 0.9, lr = 0.01, 
-                                  gamma = 0.9, 
-                                  current_stock = self.init_stock[idx], 
-                                  debug = False))
+            for idx in range(self.num_agent):
+                
+                agent_list.append(agent(idx, self.action_space, epsilon = 0.9, lr = 0.01, 
+                                      gamma = 0.9, 
+                                      current_stock = self.init_stock[idx],
+                                      trained_table = trained_table))
+                
+        else: 
+            
+            agent_list = []
+            
+            for idx in range(self.num_agent):
+                
+                agent_list.append(agent(idx, self.action_space, epsilon = 0.9, lr = 0.01, 
+                                      gamma = 0.9, 
+                                      current_stock = self.init_stock[idx]))
+            
+        
         return agent_list
         
     def ping_env(self):
@@ -66,20 +80,20 @@ class agent_manager():
             self.agent_list[idx].learn(s[idx], a[idx], r[idx], s_[idx], day_end)
                         
             
-    def batch_choose_action(self, s, mode, q_tables):
+    def batch_choose_action(self, s):
         
         actions = []
         
         for idx in range(self.num_agent):
-            action = self.agent_list[idx].choose_action(s[idx], mode, q_tables)
+            action = self.agent_list[idx].choose_action(s[idx])
                         
             actions.append(action)
             
         return actions
         
-    def batch_reset(self):
+    def batch_reset(self, q_talbe):
         
-        self.agent_list = self.init_agents()
+        self.agent_list = self.init_agents(q_talbe)
         
     def get_team_rewards(self):
         
@@ -93,14 +107,31 @@ class agent_manager():
     
     def get_q_tables(self):
         
+        # Collect Q Tables from All Agents
         q_tables = []
-        
+
         for agent in self.agent_list:
             q_tables.append(agent.get_q_table())
+        
             
-        return q_tables
-
-    
+        # Concatenate all Q Tables
+        merged_table = q_tables[0]
+        
+        if len(q_tables) > 1:
+            
+            for idx in range(1, len(q_tables)): 
+                
+                merged_table = pd.concat([merged_table, q_tables[idx]], axis = 0)           
+        
+        # De-duplicate Merged Q Tables by Grouping and Averaging the Values
+        
+        merged_table = merged_table.groupby(merged_table.index)[merged_table.columns.values].mean()
+        
+        merged_table.fillna(0.0, inplace = True)
+        
+        return q_tables, merged_table
+        
+            
     def eps_reset(self):
             
         for agent in self.agent_list:
@@ -131,7 +162,7 @@ class agent():
     '''
     
     def __init__(self, name, action_space, epsilon, 
-                 lr, gamma, current_stock, debug):
+                 lr, gamma, current_stock, trained_table = None):
         
         self.name = "a" + str(name)
         self.actions = action_space
@@ -139,21 +170,27 @@ class agent():
         self.epsilon = epsilon
         self.lr = lr
         self.gamma = gamma
-        self.debug = debug
         self.current_stock = current_stock
         
+        if trained_table is not None: 
+            
+            self.q_table = trained_table
+            print("{}: hello :)  I am ready with some knowledge.".format(self.name))
+            
+        else: 
+            
+            self.q_table = pd.DataFrame(columns = self.actions, dtype = np.float64)
+            print("{}: hello :)  I am ready, but new to this.".format(self.name))
+        
+        
         # performance metric
-        self.q_table = pd.DataFrame(columns = self.actions, dtype = np.float64)
         self.hourly_action_history = []
         self.hourly_stock_history = []
-        self.cumulative_reward = 0.0
-        
-        print("{}: hello :)  I am ready.".format(self.name))
-        
+        self.cumulative_reward = 0.0        
         self.check_state_exist(current_stock)
 
         
-    def choose_action(self, s, mode, tl_q_tables):
+    def choose_action(self, s):
         
         '''
         This funciton choose an action based on Q Table. It also does 
@@ -175,21 +212,14 @@ class agent():
         valid_state_action = self.q_table.loc[s, :]
                 
         if np.random.uniform() < self.epsilon:
-            
-            action = self.find_best_actions(s, self.q_table)
-                                  
-            #TODO: PICK ACTION BASED ON TL
-            #FIND BEST ACTION USING MAJORITY VOTING BASED ON OLD Q-TALBES
-            #DECIDE IF ACITON SHOULD BE OVERRULED
-            
-            if mode == "test":
+        
+            try:
+                state_actions = valid_state_action.reindex(np.random.permutation(valid_state_action.index))
+                action = state_actions.idxmax()
                 
-                best_action, tl_flag = self.find_best_actions(s, tl_q_tables)                
-                
-                # Pick an action based on TL Weighting
-                if tl_flag == False:
-                    action = best_action
-            
+            except:
+                action = 0
+                                              
         else:
             
             # randomly choose an action
@@ -206,48 +236,6 @@ class agent():
         return action
         
         
-    def find_best_actions(self, s, q_tables):
-        
-        best_actions = []
-        tl_flag = False
-        
-        # Find Best Action based on State-Action Values
-        # Applied to both normal Q Table and TL Process
-        
-        if type(q_tables) == list: 
-            
-            for table in q_tables:
-                
-                try:
-                    state_actions = table.loc[s, :]
-                    state_actions = state_actions.reindex(np.random.permutation(state_actions.index))
-                    best_action = state_actions.idxmax()
-                    
-                except:
-                    tl_flag = True
-                    best_action = 0
-                    
-                best_actions.append(best_action)
-                
-            # Talley all Actions and Return and most voted
-            
-            best_action = max(set(best_actions), key = best_actions.count)
-                
-            return best_action, tl_flag
-        
-        else:
-            
-            state_actions = q_tables.loc[s, :]
-            
-            try:
-                state_actions = state_actions.reindex(np.random.permutation(state_actions.index))
-                best_action = state_actions.idxmax()
-                
-            except:
-                best_action = 0
-            
-            return best_action
-                    
     def learn(self, s, a, r, s_, day_end):
 
         
@@ -262,12 +250,6 @@ class agent():
             - s_: new bike stock based on bike moved and new stock
         Output: None
         '''
-        
-        if self.debug == True:
-            print("Moved Bikes: {}".format(a))
-            print("Old Bike Stock: {}".format(s))
-            print("New Bike Stock: {}".format(s_))
-            print("---")
         
         self.check_state_exist(s_)
         
@@ -291,7 +273,6 @@ class agent():
     def check_state_exist(self, state):
         
         # Add a new row with state value as index if not exist
-        
         if state not in self.q_table.index:
             
             self.q_table = self.q_table.append(

@@ -8,7 +8,6 @@ Created on Sun Jun  3 16:49:14 2018
 
 import numpy as np
 import pandas as pd
-import json
 
 class env():
     

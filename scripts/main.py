@@ -17,7 +17,7 @@ if __name__ == "__main__":
     num_stations = 3
     episode = 50000
 
-    trainer = trainer(num_stations, action_space, episode)
+    trainer = trainer(num_stations, action_space, episode) 
     trainer.run(mode = "learn")    
     trainer.run(mode = "test")
     trainer.graph_performance(episode)
