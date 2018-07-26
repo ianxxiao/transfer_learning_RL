@@ -11,14 +11,13 @@ import pandas as pd
 
 class env():
     
-    def __init__(self, num_stations, init_stock, debug):
+    def __init__(self, num_stations, init_stock, threshold):
         
         print("Creating a network of {} stations ...".format(num_stations))
         
-        self.debug = debug
         self.num_stations = num_stations
         self.init_stock = init_stock
-        self.upper_trenshold = init_stock * 1.5
+        self.upper_trenshold = init_stock * threshold
         self.seed = np.random.random_integers(0, 10)
         self.num_hours = 23
         self.current_hour = 0
@@ -41,6 +40,7 @@ class env():
         of stations. 
         
         return: a list of station class (e.g. name, simulated hourly stock)
+        
         '''
         
         station_list = []
@@ -73,24 +73,23 @@ class env():
                             
                 # compute hourly netflow
                 this_station_hourly_net_flow = np.array(all_hourly_inflow) - np.array(all_hourly_outflow)
-                
-                # create station class
-                if self.debug == True:
-                    print("initiated station {}".format(i))
-                
+                                
                 station_list.append(station(i, self.init_stock, this_station_hourly_net_flow))
             
             else:
                 # create station class
-                if self.debug == True:
-                    print("initiated station {}".format(i))
-                
+
                 station_list.append(station(i, self.init_stock, self.hourly_flow_matrix))
             
         return station_list
             
 
     def init_hourly_flow(self):
+        
+        '''
+        This function calculate the hourly 
+        
+        '''
                 
         hourly_flow = []
         
@@ -112,6 +111,13 @@ class env():
 
         
     def ping(self, actions):
+        
+        '''
+        
+        This function triggers the environment reaction to agents' actions
+        (e.g. update bike stock, update clock, etc.)
+        
+        '''
         
         # Update Station Stocks
         # actions = [-3, -5, 1] as number of bikes move for the corresponding station
@@ -136,11 +142,6 @@ class env():
                 else: 
                     self.rewards[station] += -50
             
-            if self.debug == True:
-                print("ping ...")
-                print("final stocks, actions, rewards: {}, {}, {}".format(self.new_stocks, actions, self.rewards))
-            
-        
         if self.current_hour != 23:
             self.update_hour()
             
@@ -152,20 +153,26 @@ class env():
                 if self.new_stocks[station] > self.upper_trenshold or self.new_stocks[station] <= 0:
                     self.rewards[station] += -30
                     self.success_flags[station] = False
-            
-            if self.debug == True:
-                print("hour {}, {}, {}, {}, {}, {}".format(self.current_hour, 
-                      self.old_stocks, self.new_stocks, actions, self.rewards, self.success_flags))
         
         return self.current_hour, self.old_stocks, self.new_stocks, self.rewards, self.day_end
         
             
     def update_hour(self):
         
+        '''
+        This function updates the environment clock.
+        
+        '''
+        
         self.current_hour += 1
         
     
     def get_old_stocks(self):
+        
+        '''
+        This function collects 
+        
+        '''
         
         # get old stocks from each station
         old_stocks = []
@@ -213,7 +220,7 @@ class env():
     def cal_success_ratio(self):
         
         return sum(self.success_flags)*1.0 / len(self.success_flags)
-
+        
         
 '''
 
@@ -271,7 +278,7 @@ class station():
             
         else: 
             pass
-        
+    
         
     def get_old_stock(self):
         

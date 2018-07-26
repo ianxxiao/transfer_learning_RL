@@ -1,0 +1,5 @@
+Reward Area without TL: -45300.5
+Reward Area with TL: -41072.0
+Ratio of Trasfer Learning: 0.09
+Count of Team Success without TL: 12
+Count of Team Success with TL: 13
