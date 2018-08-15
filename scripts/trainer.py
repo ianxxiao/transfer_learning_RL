@@ -40,6 +40,7 @@ class trainer():
         self.merged_table = 0
         self.mode = "learn"
         self.collaboration = collaboration
+        self.threshold = threshold
                 
         for idx in range(num_stations):
             self.init_stocks.append(50)
@@ -108,7 +109,7 @@ class trainer():
     
     def graph_performance(self, num_eps):
         
-        window = num_eps / 500
+        window = num_eps / 200
                 
         # Rolling Average of Group Success Ratio
         fig = plt.figure(figsize = (10, 8))
@@ -168,10 +169,16 @@ class trainer():
             area_wo_TL = np.array(self.team_cumulative_rewards["learn"]).sum()
             area_TL = np.array(self.team_cumulative_rewards["test"]).sum()
         
-            r = (area_wo_TL - area_TL)/area_wo_TL
+            r = (area_TL - area_wo_TL)/area_wo_TL
             
             f.write("Number of Episodes: {}".format(num_eps))
+            f.write("\n")
+            f.write("Threshold: {}".format(self.threshold))
+            f.write("\n")
+            f.write("Action Space: {}".format(self.action_space))
+            f.write("\n")  
             f.write("Collaboration: {}".format(self.collaboration))
+            f.write("\n")
             f.write("Reward Area without TL: {}".format(area_wo_TL))
             f.write("\n")
             f.write("Reward Area with TL: {}".format(area_TL))
@@ -187,19 +194,28 @@ class trainer():
             f.write("Count of Team Success without TL: {}".format(cnt_team_success_wo_TL))
             f.write("\n")
             f.write("Count of Team Success with TL: {}".format(cnt_team_success_TL))
+            
+            
+        # Plot Bike Moving Cost of Successful Network
+        cost = []
         
-    def rolling_avg(self, metric, n):
+        for idx, val in enumerate(self.success_ratios["learn"]):
+            
+            if val == 1.0:
+                cost.append(np.abs(self.team_cumulative_rewards["learn"][idx]) - 50.0)
         
-        '''
-        This function calculates the rolling averages of a metric based on 
-        a dynamically determined window.
+        rolling_cost = pd.Series(cost).rolling(window).mean()
         
-        '''
+        fig = plt.figure(figsize = (10, 8))
+        x_axis = [x for x in range(len(rolling_cost))]
+        plt.plot(x_axis, rolling_cost)
+        plt.xlabel('Complete Network Success Incidence ordered by Episodes')
+        plt.ylabel("Rolling Cost (Total Reward - Success Reward)")
+        plt.title("Cost of Bike Moving for Complete Network Success (window = " + str(window) + ")")
         
-        ret = np.cumsum(metric, dtype = float)
-        ret[n:] = ret[n:] - ret[:-n]
-        return ret[n - 1:] / n
-        
+        fig.savefig(self.result_dir + "/rolling_cost")
+        pd.Series(cost).to_csv(self.result_dir + "/rolling_cost.csv")
+                
     
     def get_timestamp(self, replace):
         

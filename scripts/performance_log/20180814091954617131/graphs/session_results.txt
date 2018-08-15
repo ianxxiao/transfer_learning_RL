@@ -1,0 +1,9 @@
+Number of Episodes: 100000
+Threshold: 1.2
+Action Space: [-50, -30, -20, -10, -3, -1, 0, 1, 3, 10, 20, 30, 50]
+Collaboration: True
+Reward Area without TL: -70928671.0
+Reward Area with TL: -39442036.0
+Ratio of Trasfer Learning: -0.44
+Count of Team Success without TL: 1007
+Count of Team Success with TL: 1808

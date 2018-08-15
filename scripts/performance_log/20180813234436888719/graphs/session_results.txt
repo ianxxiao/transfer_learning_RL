@@ -1,0 +1,5 @@
+Number of Episodes: 100Collaboration: TrueReward Area without TL: -36996.0
+Reward Area with TL: -39932.5
+Ratio of Trasfer Learning: -0.08
+Count of Team Success without TL: 14
+Count of Team Success with TL: 14

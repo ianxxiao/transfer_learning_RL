@@ -12,10 +12,10 @@ if __name__ == "__main__":
     
     # tODO: IMPLEMENT MULTIPROCESING
     
-    action_space = [-50, -30, -20, -10, -3, -1, 0, 1, 3, 10, 20, 30, 50]
-    num_stations = 3
-    episode = 2000
-    threshold = 3
+    action_space = [-30, -20, -10, -3, -1, 0, 1, 3, 10, 20, 30]
+    num_stations = 10
+    episode = 1000000
+    threshold = 1.2
 
     trainer = trainer(num_stations, action_space, episode, threshold, collaboration = True) 
     trainer.run(mode = "learn")    
